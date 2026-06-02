@@ -3,12 +3,13 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, Music2, LayoutDashboard, Piano, Headphones,
-  HelpCircle, GitBranch, BookOpen, User,
+  HelpCircle, GitBranch, BookOpen, User, GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/lessons', label: 'Lessons', icon: GraduationCap },
   { to: '/scales', label: 'Scales', icon: Piano },
   { to: '/ear-training', label: 'Ear Training', icon: Headphones },
   { to: '/quiz', label: 'Quiz', icon: HelpCircle },

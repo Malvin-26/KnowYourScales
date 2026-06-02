@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Piano, Headphones, Trophy, Zap, ArrowRight } from 'lucide-react';
+import { Piano, Headphones, Trophy, Zap, ArrowRight, GraduationCap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { AudioVisualizer } from '../components/music/AudioVisualizer';
 
 const features = [
+  { icon: GraduationCap, title: 'Lessons', desc: 'Five guided lessons on scales with video and +30 credits each' },
   { icon: Piano, title: 'Scale Explorer', desc: 'Interactive piano, circle of fifths, and interval formulas' },
   { icon: Headphones, title: 'Ear Training', desc: 'Notes, intervals, and chord recognition exercises' },
   { icon: Trophy, title: 'Quizzes & XP', desc: 'Timed challenges, streaks, and achievement badges' },
@@ -39,8 +40,13 @@ export function LandingPage() {
                   Get started free <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link to="/scales">
+              <Link to="/lessons">
                 <Button variant="secondary" size="lg">
+                  Start lessons
+                </Button>
+              </Link>
+              <Link to="/scales">
+                <Button variant="ghost" size="lg">
                   Explore scales
                 </Button>
               </Link>

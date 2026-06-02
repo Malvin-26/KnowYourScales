@@ -13,6 +13,7 @@ import earRoutes from './routes/ear.js';
 import chordsRoutes from './routes/chords.js';
 import songsRoutes from './routes/songs.js';
 import achievementsRoutes from './routes/achievements.js';
+import lessonsRoutes from './routes/lessons.js';
 import {
   apiRateLimiter,
   authRateLimiter,
@@ -52,6 +53,7 @@ app.use('/api/ear', earRoutes);
 app.use('/api/chords', chordsRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/achievements', achievementsRoutes);
+app.use('/api/lessons', lessonsRoutes);
 
 const clientDist = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDist));

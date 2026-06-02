@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS user_progress (
   quizzes_completed INTEGER DEFAULT 0,
   ear_sessions_completed INTEGER DEFAULT 0,
   chords_practiced INTEGER DEFAULT 0,
-  songs_practiced INTEGER DEFAULT 0
+  songs_practiced INTEGER DEFAULT 0,
+  lessons_completed INTEGER DEFAULT 0
 );
 
 -- Quiz / session scores
@@ -120,6 +121,14 @@ CREATE TABLE IF NOT EXISTS songs (
   progression TEXT NOT NULL,
   chords TEXT NOT NULL,
   category TEXT NOT NULL
+);
+
+-- Lesson completions
+CREATE TABLE IF NOT EXISTS user_lesson_completions (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lesson_id TEXT NOT NULL,
+  completed_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, lesson_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_quiz_results_user ON quiz_results(user_id);

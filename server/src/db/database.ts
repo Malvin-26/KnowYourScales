@@ -27,6 +27,11 @@ export function initDatabase(): void {
   if (!schemaPath) throw new Error('schema.sql not found');
   const schema = fs.readFileSync(schemaPath, 'utf-8');
   db.exec(schema);
+  try {
+    db.exec('ALTER TABLE user_progress ADD COLUMN lessons_completed INTEGER DEFAULT 0');
+  } catch {
+    /* column already exists */
+  }
 }
 
 export default db;

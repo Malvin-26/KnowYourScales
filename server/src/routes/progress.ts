@@ -82,6 +82,7 @@ router.post('/activity', (req: AuthRequest, res) => {
     ear_training: 'ear_sessions_completed',
     chord: 'chords_practiced',
     song: 'songs_practiced',
+    lesson: 'lessons_completed',
   };
   const field = fieldMap[activityType];
   if (field) {

@@ -12,6 +12,8 @@ import { QuizPage } from './pages/QuizPage';
 import { ChordProgressionsPage } from './pages/ChordProgressionsPage';
 import { SongPracticePage } from './pages/SongPracticePage';
 import { ProfilePage } from './pages/ProfilePage';
+import { LessonsPage } from './pages/LessonsPage';
+import { LessonDetailPage } from './pages/LessonDetailPage';
 function AppRoutes() {
   return (
     <Routes>
@@ -20,6 +22,8 @@ function AppRoutes() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="lessons" element={<LessonsPage />} />
+        <Route path="lessons/:lessonId" element={<LessonDetailPage />} />
         <Route path="scales" element={<ScaleExplorerPage />} />
         <Route path="ear-training" element={<EarTrainingPage />} />
         <Route path="quiz" element={<QuizPage />} />
@@ -34,7 +38,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
       <AuthProvider>
         <ToastProvider>
           <AppRoutes />

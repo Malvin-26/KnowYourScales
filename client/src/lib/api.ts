@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('kys_token');
@@ -93,6 +93,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ songId, durationSeconds }),
     }),
+
+  getLessonProgress: () =>
+    request<{ completed: string[]; xpPerLesson: number }>('/lessons/completed'),
+  completeLesson: (lessonId: string) =>
+    request<{ success: boolean; alreadyCompleted: boolean; xpEarned: number; xp?: number; level?: number }>(
+      `/lessons/${lessonId}/complete`,
+      { method: 'POST' }
+    ),
 
   getAchievements: () => request<{ achievements: Achievement[] }>('/achievements'),
   getMyAchievements: () =>
