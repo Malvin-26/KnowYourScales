@@ -13,11 +13,11 @@ export const LESSON_SECTION = 'Introduction to Scales';
 export const LESSONS: Lesson[] = [
   {
     id: 'scales-notes-and-keys',
-    title: 'Scales, Notes and Keys',
+    title: 'Scales, Notes and Key',
     order: 1,
     youtubeId: 'Zs7617DJKKg',
     summary:
-      'Learn how pitch names, scales, and keys work together as the foundation of Western music theory.',
+      'Learn how pitch names, scales, and key signatures work together as the foundation of Western music theory.',
     sections: [
       {
         heading: 'What is a note?',
