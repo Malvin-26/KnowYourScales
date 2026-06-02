@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const isGitHubPages = process.env.GITHUB_PAGES === 'true' || process.env.npm_config_github_pages === 'true';
 const base = isGitHubPages ? '/KnowYourScales/' : '/';
 
 export default defineConfig({
