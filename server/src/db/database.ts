@@ -1,17 +1,30 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const dbPath =
-  process.env.DATABASE_PATH ||
-  path.join(process.cwd(), 'data', 'knowyourscales.db');
+const defaultDbPath = path.join(process.cwd(), 'data', 'knowyourscales.db');
+const tempDbPath = path.join(os.tmpdir(), 'knowyourscales.db');
+const candidateDbPath = process.env.DATABASE_PATH || defaultDbPath;
 
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+function ensureWritableDbPath(filePath: string): string {
+  const dir = path.dirname(filePath);
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return filePath;
+  } catch {
+    return tempDbPath;
+  }
+}
+
+const dbPath = ensureWritableDbPath(candidateDbPath);
+if (dbPath !== candidateDbPath) {
+  console.warn(`Falling back to writable database path: ${dbPath}`);
 }
 
 const db = new DatabaseSync(dbPath);

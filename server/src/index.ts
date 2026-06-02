@@ -67,6 +67,13 @@ app.get('*', (req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Know Your Scales API running on http://localhost:${PORT}`);
-});
+const currentFile = fileURLToPath(import.meta.url);
+const isMain = process.argv[1] === currentFile;
+
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`Know Your Scales API running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
