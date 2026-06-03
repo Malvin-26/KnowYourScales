@@ -22,12 +22,23 @@ function ensureWritableDbPath(filePath: string): string {
   }
 }
 
-const dbPath = ensureWritableDbPath(candidateDbPath);
+let dbPath = ensureWritableDbPath(candidateDbPath);
+function createDatabase(pathToUse: string): DatabaseSync {
+  try {
+    return new DatabaseSync(pathToUse);
+  } catch (error) {
+    if (pathToUse !== tempDbPath) {
+      console.warn(`Unable to open database at ${pathToUse}, falling back to ${tempDbPath}.`, error);
+      return createDatabase(tempDbPath);
+    }
+    throw error;
+  }
+}
 if (dbPath !== candidateDbPath) {
   console.warn(`Falling back to writable database path: ${dbPath}`);
 }
 
-const db = new DatabaseSync(dbPath);
+const db = createDatabase(dbPath);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 

@@ -14,7 +14,7 @@ export interface AuthRequest extends Request {
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: '7d' });
 }
 
 export function authMiddleware(
@@ -29,7 +29,7 @@ export function authMiddleware(
   }
   try {
     const token = header.slice(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as AuthPayload;
     req.user = decoded;
     next();
   } catch {
@@ -46,7 +46,7 @@ export function optionalAuth(
   if (header?.startsWith('Bearer ')) {
     try {
       const token = header.slice(7);
-      req.user = jwt.verify(token, JWT_SECRET) as AuthPayload;
+      req.user = jwt.verify(token, JWT_SECRET as string) as unknown as AuthPayload;
     } catch {
       /* ignore */
     }
