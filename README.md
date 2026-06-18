@@ -54,7 +54,9 @@ The site must be served from `https://<user>.github.io/KnowYourScales/` (project
 ```env
 PORT=3001
 JWT_SECRET=your-random-secret-at-least-32-characters
-DATABASE_PATH=./data/knowyourscales.db
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.krntoehpfvkkxfvslhcx.supabase.co:5432/postgres
+NEXT_PUBLIC_SUPABASE_URL=https://krntoehpfvkkxfvslhcx.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ylUGxTlM6X9yNF24N9KFrw_mi5kRs-h
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173,https://malvin-26.github.io
 ```

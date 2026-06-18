@@ -14,7 +14,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 
 $nodeVersion = [version]((node -v) -replace '^v', '')
 if ($nodeVersion.Major -lt 22) {
-  Write-Host "Node.js 22.5+ is required (built-in SQLite). Found: $(node -v)" -ForegroundColor Red
+  Write-Host "Node.js 22.5+ is required. Found: $(node -v)" -ForegroundColor Red
   exit 1
 }
 
@@ -24,10 +24,13 @@ Set-Location $PSScriptRoot
 npm install
 Set-Location server
 npm install
+if (-not (Test-Path .env)) {
+  Copy-Item .env.example .env
+  Write-Host "Created server/.env from .env.example. Please configure JWT_SECRET and DATABASE_URL in it!" -ForegroundColor Yellow
+}
 Set-Location ..\client
 npm install
 Set-Location ..
-npm run db:seed
 
 Write-Host ""
-Write-Host "Setup complete. Run: npm run dev" -ForegroundColor Green
+Write-Host "Setup complete. Set your environment variables in server/.env and run: npm run db:seed && npm run dev" -ForegroundColor Green

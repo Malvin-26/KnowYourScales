@@ -7,10 +7,5 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET}
-      - DATABASE_PATH=/data/knowyourscales.db
-    volumes:
-      - db_data:/data
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
-
-volumes:
-  db_data:
