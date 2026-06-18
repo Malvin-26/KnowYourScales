@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 import { signToken, authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { ensureProgress } from '../services/progress.js';
 
@@ -19,7 +19,7 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid registration data' });
@@ -27,22 +27,23 @@ router.post('/register', (req, res) => {
   }
   const { email, username, password, displayName } = parsed.data;
 
-  const existing = db.prepare(
-    'SELECT id FROM users WHERE email = ? OR username = ?'
-  ).get(email, username);
-  if (existing) {
+  const existing = await sql`
+    SELECT id FROM users WHERE email = ${email} OR username = ${username}
+  `;
+  if (existing.length > 0) {
     res.status(409).json({ error: 'Email or username already taken' });
     return;
   }
 
   const hash = bcrypt.hashSync(password, 10);
-  const result = db.prepare(`
+  const result = await sql`
     INSERT INTO users (email, username, password_hash, display_name)
-    VALUES (?, ?, ?, ?)
-  `).run(email, username, hash, displayName || username);
+    VALUES (${email}, ${username}, ${hash}, ${displayName || username})
+    RETURNING id
+  `;
 
-  const userId = Number(result.lastInsertRowid);
-  ensureProgress(userId);
+  const userId = result[0].id;
+  await ensureProgress(userId);
 
   const token = signToken({ userId, email });
   res.status(201).json({
@@ -51,7 +52,7 @@ router.post('/register', (req, res) => {
   });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid credentials' });
@@ -59,9 +60,10 @@ router.post('/login', (req, res) => {
   }
   const { email, password } = parsed.data;
 
-  const user = db.prepare(
-    'SELECT id, email, username, password_hash, display_name FROM users WHERE email = ?'
-  ).get(email) as
+  const users = await sql`
+    SELECT id, email, username, password_hash, display_name FROM users WHERE email = ${email}
+  `;
+  const user = users[0] as
     | { id: number; email: string; username: string; password_hash: string; display_name: string }
     | undefined;
 
@@ -82,10 +84,11 @@ router.post('/login', (req, res) => {
   });
 });
 
-router.get('/me', authMiddleware, (req: AuthRequest, res) => {
-  const user = db.prepare(
-    'SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ?'
-  ).get(req.user!.userId);
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
+  const users = await sql`
+    SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ${req.user!.userId}
+  `;
+  const user = users[0];
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;

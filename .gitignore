@@ -12,3 +12,4 @@ coverage/
 .vite/
 server/data/
 *.tsbuildinfo
+.vercel/

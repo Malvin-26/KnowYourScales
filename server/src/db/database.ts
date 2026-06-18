@@ -1,61 +1,50 @@
-import { DatabaseSync } from 'node:sqlite';
+import postgres from 'postgres';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { env } from '../config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const defaultDbPath = path.join(process.cwd(), 'data', 'knowyourscales.db');
-const tempDbPath = path.join(os.tmpdir(), 'knowyourscales.db');
-const candidateDbPath = process.env.DATABASE_PATH || defaultDbPath;
+const sql = postgres(env.DATABASE_URL, {
+  ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
-function ensureWritableDbPath(filePath: string): string {
-  const dir = path.dirname(filePath);
-  try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+export async function initDatabase(): Promise<void> {
+  const tables = await sql`
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users'
+  `;
+  if (tables.length === 0) {
+    const candidates = [
+      path.join(__dirname, 'schema.sql'),
+      path.join(__dirname, '../../src/db/schema.sql'),
+      path.join(__dirname, '../../server/src/db/schema.sql'),
+    ];
+    const schemaPath = candidates.find((p) => fs.existsSync(p));
+    if (!schemaPath) throw new Error('schema.sql not found');
+    const schema = fs.readFileSync(schemaPath, 'utf-8');
+    
+    // Execute the schema SQL
+    await sql.unsafe(schema);
+  }
+  
+  // Ensure lessons_completed column exists in user_progress
+  const columns = await sql`
+    SELECT column_name 
+    FROM information_schema.columns 
+    WHERE table_name = 'user_progress' AND column_name = 'lessons_completed'
+  `;
+  if (columns.length === 0) {
+    try {
+      await sql`ALTER TABLE user_progress ADD COLUMN lessons_completed INTEGER DEFAULT 0`;
+    } catch {
+      /* column already exists */
     }
-    return filePath;
-  } catch {
-    return tempDbPath;
   }
+
+  // Import and run seeding
+  const { seedIfEmpty } = await import('./seed.js');
+  await seedIfEmpty();
 }
 
-let dbPath = ensureWritableDbPath(candidateDbPath);
-function createDatabase(pathToUse: string): DatabaseSync {
-  try {
-    return new DatabaseSync(pathToUse);
-  } catch (error) {
-    if (pathToUse !== tempDbPath) {
-      console.warn(`Unable to open database at ${pathToUse}, falling back to ${tempDbPath}.`, error);
-      return createDatabase(tempDbPath);
-    }
-    throw error;
-  }
-}
-if (dbPath !== candidateDbPath) {
-  console.warn(`Falling back to writable database path: ${dbPath}`);
-}
-
-const db = createDatabase(dbPath);
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
-
-export function initDatabase(): void {
-  const candidates = [
-    path.join(__dirname, 'schema.sql'),
-    path.join(__dirname, '../../src/db/schema.sql'),
-  ];
-  const schemaPath = candidates.find((p) => fs.existsSync(p));
-  if (!schemaPath) throw new Error('schema.sql not found');
-  const schema = fs.readFileSync(schemaPath, 'utf-8');
-  db.exec(schema);
-  try {
-    db.exec('ALTER TABLE user_progress ADD COLUMN lessons_completed INTEGER DEFAULT 0');
-  } catch {
-    /* column already exists */
-  }
-}
-
-export default db;
+export default sql;

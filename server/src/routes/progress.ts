@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import {
   addXp,
@@ -18,30 +18,31 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', (req: AuthRequest, res) => {
+router.get('/', async (req: AuthRequest, res) => {
   const userId = req.user!.userId;
-  ensureProgress(userId);
-  ensureDailyMinutesCurrent(userId);
-  const progress = db.prepare('SELECT * FROM user_progress WHERE user_id = ?').get(userId);
-  const achievements = db.prepare(`
+  await ensureProgress(userId);
+  await ensureDailyMinutesCurrent(userId);
+  const progressRows = await sql`SELECT * FROM user_progress WHERE user_id = ${userId}`;
+  const progress = progressRows[0];
+  const achievements = await sql`
     SELECT a.*, ua.earned_at
     FROM user_achievements ua
     JOIN achievements a ON a.id = ua.achievement_id
-    WHERE ua.user_id = ?
+    WHERE ua.user_id = ${userId}
     ORDER BY ua.earned_at DESC
-  `).all(userId);
+  `;
 
-  const recentActivity = db.prepare(`
+  const recentActivity = await sql`
     SELECT activity_type, metadata, duration_seconds, created_at
-    FROM activity_log WHERE user_id = ?
+    FROM activity_log WHERE user_id = ${userId}
     ORDER BY created_at DESC LIMIT 10
-  `).all(userId);
+  `;
 
-  const quizStats = db.prepare(`
+  const quizStats = await sql`
     SELECT quiz_type, AVG(CAST(score AS REAL) / total_questions) as avg_score, COUNT(*) as count
-    FROM quiz_results WHERE user_id = ?
+    FROM quiz_results WHERE user_id = ${userId}
     GROUP BY quiz_type
-  `).all(userId);
+  `;
 
   const p = progress as { xp: number; level: number };
   res.json({
@@ -63,7 +64,7 @@ const activitySchema = z.object({
   xpEarned: z.number().optional(),
 });
 
-router.post('/activity', (req: AuthRequest, res) => {
+router.post('/activity', async (req: AuthRequest, res) => {
   const parsed = activitySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid activity data' });
@@ -72,9 +73,9 @@ router.post('/activity', (req: AuthRequest, res) => {
   const userId = req.user!.userId;
   const { activityType, durationSeconds = 0, metadata, xpEarned = 10 } = parsed.data;
 
-  logActivity(userId, activityType, durationSeconds, metadata);
-  addDailyPracticeMinutes(userId, durationSeconds);
-  updateStreak(userId);
+  await logActivity(userId, activityType, durationSeconds, metadata);
+  await addDailyPracticeMinutes(userId, durationSeconds);
+  await updateStreak(userId);
 
   const fieldMap: Record<string, string> = {
     scale_explore: 'scales_explored',
@@ -86,46 +87,43 @@ router.post('/activity', (req: AuthRequest, res) => {
   };
   const field = fieldMap[activityType];
   if (field) {
-    db.prepare(`UPDATE user_progress SET ${field} = ${field} + 1 WHERE user_id = ?`).run(userId);
+    await sql`UPDATE user_progress SET ${sql(field)} = ${sql(field)} + 1 WHERE user_id = ${userId}`;
   }
 
-  const result = addXp(userId, xpEarned);
-  checkLevelAchievements(userId, result.level);
+  const result = await addXp(userId, xpEarned);
+  await checkLevelAchievements(userId, result.level);
 
   if (activityType === 'scale_explore') {
-    const row = db.prepare('SELECT scales_explored FROM user_progress WHERE user_id = ?').get(userId) as {
-      scales_explored: number;
-    };
-    if (row.scales_explored >= 1) grantAchievement(userId, 'first-scale');
-    if (row.scales_explored >= 12) grantAchievement(userId, 'scale-master');
+    const rows = await sql`SELECT scales_explored FROM user_progress WHERE user_id = ${userId}`;
+    const row = rows[0] as { scales_explored: number } | undefined;
+    if (row && row.scales_explored >= 1) await grantAchievement(userId, 'first-scale');
+    if (row && row.scales_explored >= 12) await grantAchievement(userId, 'scale-master');
   }
-  if (activityType === 'quiz') grantAchievement(userId, 'quiz-rookie');
+  if (activityType === 'quiz') await grantAchievement(userId, 'quiz-rookie');
   if (activityType === 'chord') {
-    const row = db.prepare('SELECT chords_practiced FROM user_progress WHERE user_id = ?').get(userId) as {
-      chords_practiced: number;
-    };
-    if (row.chords_practiced >= 5) grantAchievement(userId, 'chord-explorer');
+    const rows = await sql`SELECT chords_practiced FROM user_progress WHERE user_id = ${userId}`;
+    const row = rows[0] as { chords_practiced: number } | undefined;
+    if (row && row.chords_practiced >= 5) await grantAchievement(userId, 'chord-explorer');
   }
 
   res.json({ success: true, ...result });
 });
 
-router.patch('/daily-goal', (req: AuthRequest, res) => {
+router.patch('/daily-goal', async (req: AuthRequest, res) => {
   const { minutes } = req.body;
   if (typeof minutes !== 'number' || minutes < 5 || minutes > 120) {
     res.status(400).json({ error: 'Goal must be between 5 and 120 minutes' });
     return;
   }
-  db.prepare('UPDATE user_progress SET daily_goal_minutes = ? WHERE user_id = ?').run(
-    minutes,
-    req.user!.userId
-  );
+  await sql`UPDATE user_progress SET daily_goal_minutes = ${minutes} WHERE user_id = ${req.user!.userId}`;
   res.json({ success: true });
 });
 
-router.get('/recommendations', (req: AuthRequest, res) => {
+router.get('/recommendations', async (req: AuthRequest, res) => {
   const userId = req.user!.userId;
-  const progress = db.prepare('SELECT * FROM user_progress WHERE user_id = ?').get(userId) as {
+  await ensureProgress(userId);
+  const progressRows = await sql`SELECT * FROM user_progress WHERE user_id = ${userId}`;
+  const progress = progressRows[0] as {
     scales_explored: number;
     quizzes_completed: number;
     ear_sessions_completed: number;

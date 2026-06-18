@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM scales ORDER BY root, type').all() as Array<{
+router.get('/', async (_req, res) => {
+  const rows = await sql`SELECT * FROM scales ORDER BY root, type` as Array<{
     id: string;
     root: string;
     type: string;
@@ -25,10 +25,16 @@ router.get('/', (_req, res) => {
   );
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM scales WHERE id = ?').get(req.params.id) as
-    | { id: string; root: string; type: string; notes: string; formula: string; relative_key: string }
-    | undefined;
+router.get('/:id', async (req, res) => {
+  const rows = await sql`SELECT * FROM scales WHERE id = ${req.params.id}` as Array<{
+    id: string;
+    root: string;
+    type: string;
+    notes: string;
+    formula: string;
+    relative_key: string;
+  }>;
+  const row = rows[0];
 
   if (!row) {
     res.status(404).json({ error: 'Scale not found' });

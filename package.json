@@ -17,6 +17,7 @@
     "build:client": "npm run build --workspace=know-your-scales-client",
     "build:pages": "cross-env GITHUB_PAGES=true npm run build:client",
     "build": "npm run build:client && npm run build --prefix server",
+    "vercel-build": "npm run build",
     "start": "npm run start --prefix server",
     "db:seed": "npm run db:seed --prefix server",
     "docker:up": "docker compose up --build",

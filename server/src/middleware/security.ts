@@ -1,10 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
-import * as helmet from 'helmet';
-import * as rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { env } from '../config/env.js';
 
-const helmetMiddleware = (helmet as any).default ?? helmet;
-const rateLimitMiddleware = (rateLimit as any).default ?? rateLimit;
 const blockedKeys = new Set(['__proto__', 'prototype', 'constructor']);
 
 function sanitizeValue(value: unknown): unknown {
@@ -28,12 +26,12 @@ function sanitizeValue(value: unknown): unknown {
   return value;
 }
 
-export const securityHeaders = helmetMiddleware({
+export const securityHeaders = helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 });
 
-export const apiRateLimiter = rateLimitMiddleware({
+export const apiRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX,
   standardHeaders: true,
@@ -41,7 +39,7 @@ export const apiRateLimiter = rateLimitMiddleware({
   message: { error: 'Too many requests, please try again later.' },
 });
 
-export const authRateLimiter = rateLimitMiddleware({
+export const authRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.AUTH_RATE_LIMIT_MAX,
   standardHeaders: true,

@@ -1,25 +1,20 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { addXp, logActivity, updateStreak } from '../services/progress.js';
 
 const router = Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { scale, difficulty } = req.query;
-  let query = 'SELECT * FROM songs WHERE 1=1';
-  const params: string[] = [];
-  if (scale) {
-    query += ' AND scale_key LIKE ?';
-    params.push(`%${scale}%`);
-  }
-  if (difficulty) {
-    query += ' AND difficulty = ?';
-    params.push(difficulty as string);
-  }
-  query += ' ORDER BY difficulty, title';
 
-  const rows = db.prepare(query).all(...params) as Array<{
+  const rows = await sql`
+    SELECT * FROM songs
+    WHERE 1=1
+    ${scale ? sql`AND scale_key LIKE ${'%' + (scale as string) + '%'}` : sql``}
+    ${difficulty ? sql`AND difficulty = ${difficulty as string}` : sql``}
+    ORDER BY difficulty, title
+  ` as Array<{
     id: string;
     title: string;
     artist: string;
@@ -46,12 +41,12 @@ router.get('/', (req, res) => {
   );
 });
 
-router.post('/practice', authMiddleware, (req: AuthRequest, res) => {
+router.post('/practice', authMiddleware, async (req: AuthRequest, res) => {
   const { songId, durationSeconds = 120 } = req.body;
   const userId = req.user!.userId;
-  logActivity(userId, 'song', durationSeconds, { songId });
-  updateStreak(userId);
-  const result = addXp(userId, 20);
+  await logActivity(userId, 'song', durationSeconds, { songId });
+  await updateStreak(userId);
+  const result = await addXp(userId, 20);
   res.json({ success: true, ...result });
 });
 

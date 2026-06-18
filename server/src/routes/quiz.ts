@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import {
   addXp,
@@ -12,11 +12,11 @@ import {
 
 const router = Router();
 
-router.get('/history', authMiddleware, (req: AuthRequest, res) => {
-  const results = db.prepare(`
-    SELECT * FROM quiz_results WHERE user_id = ?
+router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
+  const results = await sql`
+    SELECT * FROM quiz_results WHERE user_id = ${req.user!.userId}
     ORDER BY completed_at DESC LIMIT 20
-  `).all(req.user!.userId);
+  `;
   res.json({ results });
 });
 
@@ -28,7 +28,7 @@ const submitSchema = z.object({
   timeSeconds: z.number().optional(),
 });
 
-router.post('/submit', authMiddleware, (req: AuthRequest, res) => {
+router.post('/submit', authMiddleware, async (req: AuthRequest, res) => {
   const parsed = submitSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid quiz data' });
@@ -37,23 +37,21 @@ router.post('/submit', authMiddleware, (req: AuthRequest, res) => {
   const { quizType, difficulty, score, totalQuestions, timeSeconds } = parsed.data;
   const userId = req.user!.userId;
 
-  db.prepare(`
+  await sql`
     INSERT INTO quiz_results (user_id, quiz_type, difficulty, score, total_questions, time_seconds)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(userId, quizType, difficulty, score, totalQuestions, timeSeconds ?? null);
+    VALUES (${userId}, ${quizType}, ${difficulty}, ${score}, ${totalQuestions}, ${timeSeconds ?? null})
+  `;
 
   const xp = Math.round((score / totalQuestions) * 50) + 10;
-  const xpResult = addXp(userId, xp);
+  const xpResult = await addXp(userId, xp);
   const duration = timeSeconds ?? 0;
-  logActivity(userId, 'quiz', duration, { quizType, difficulty, score, totalQuestions });
-  addDailyPracticeMinutes(userId, duration > 0 ? duration : 60);
-  updateStreak(userId);
-  db.prepare('UPDATE user_progress SET quizzes_completed = quizzes_completed + 1 WHERE user_id = ?').run(
-    userId
-  );
+  await logActivity(userId, 'quiz', duration, { quizType, difficulty, score, totalQuestions });
+  await addDailyPracticeMinutes(userId, duration > 0 ? duration : 60);
+  await updateStreak(userId);
+  await sql`UPDATE user_progress SET quizzes_completed = quizzes_completed + 1 WHERE user_id = ${userId}`;
 
-  grantAchievement(userId, 'quiz-rookie');
-  if (score === totalQuestions) grantAchievement(userId, 'perfect-quiz');
+  await grantAchievement(userId, 'quiz-rookie');
+  if (score === totalQuestions) await grantAchievement(userId, 'perfect-quiz');
 
   res.json({ success: true, xpEarned: xp, ...xpResult });
 });

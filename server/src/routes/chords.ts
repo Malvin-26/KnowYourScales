@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import sql from '../db/database.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { addXp, logActivity, updateStreak } from '../services/progress.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM chord_progressions ORDER BY genre, name').all() as Array<{
+router.get('/', async (_req, res) => {
+  const rows = await sql`SELECT * FROM chord_progressions ORDER BY genre, name` as Array<{
     id: string;
     name: string;
     genre: string;
@@ -29,12 +29,12 @@ router.get('/', (_req, res) => {
   );
 });
 
-router.post('/practice', authMiddleware, (req: AuthRequest, res) => {
+router.post('/practice', authMiddleware, async (req: AuthRequest, res) => {
   const { progressionId, durationSeconds = 60 } = req.body;
   const userId = req.user!.userId;
-  logActivity(userId, 'chord', durationSeconds, { progressionId });
-  updateStreak(userId);
-  const result = addXp(userId, 15);
+  await logActivity(userId, 'chord', durationSeconds, { progressionId });
+  await updateStreak(userId);
+  const result = await addXp(userId, 15);
   res.json({ success: true, ...result });
 });
 

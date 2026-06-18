@@ -3,7 +3,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  DATABASE_PATH: z.string().min(1).default('./data/knowyourscales.db'),
+  DATABASE_URL: z.string().min(1).default('postgresql://postgres:postgres@localhost:5432/postgres'),
   JWT_SECRET: z.string().min(32).optional(),
   CORS_ORIGIN: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(15 * 60 * 1000),

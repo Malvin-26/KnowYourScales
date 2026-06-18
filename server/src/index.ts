@@ -24,7 +24,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = env.PORT;
 
-initDatabase();
+await initDatabase();
 
 const app = express();
 app.disable('x-powered-by');

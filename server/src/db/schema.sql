@@ -1,13 +1,13 @@
 -- Users
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   display_name TEXT,
   avatar_url TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- User progress & gamification
@@ -31,25 +31,25 @@ CREATE TABLE IF NOT EXISTS user_progress (
 
 -- Quiz / session scores
 CREATE TABLE IF NOT EXISTS quiz_results (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   quiz_type TEXT NOT NULL,
   difficulty TEXT NOT NULL,
   score INTEGER NOT NULL,
   total_questions INTEGER NOT NULL,
   time_seconds INTEGER,
-  completed_at TEXT DEFAULT (datetime('now'))
+  completed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Ear training sessions
 CREATE TABLE IF NOT EXISTS ear_training_results (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   exercise_type TEXT NOT NULL,
   difficulty TEXT NOT NULL,
   score INTEGER NOT NULL,
   total_questions INTEGER NOT NULL,
-  completed_at TEXT DEFAULT (datetime('now'))
+  completed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Achievements
@@ -65,28 +65,28 @@ CREATE TABLE IF NOT EXISTS achievements (
 CREATE TABLE IF NOT EXISTS user_achievements (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   achievement_id TEXT NOT NULL REFERENCES achievements(id),
-  earned_at TEXT DEFAULT (datetime('now')),
+  earned_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (user_id, achievement_id)
 );
 
 -- Saved favorites / bookmarks
 CREATE TABLE IF NOT EXISTS user_favorites (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   item_type TEXT NOT NULL,
   item_key TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, item_type, item_key)
 );
 
 -- Practice activity log (for stats & recommendations)
 CREATE TABLE IF NOT EXISTS activity_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   activity_type TEXT NOT NULL,
   metadata TEXT,
   duration_seconds INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Reference: scales (seeded)
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS songs (
 CREATE TABLE IF NOT EXISTS user_lesson_completions (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   lesson_id TEXT NOT NULL,
-  completed_at TEXT DEFAULT (datetime('now')),
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (user_id, lesson_id)
 );
 
